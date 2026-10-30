@@ -1,0 +1,40 @@
+name: abank
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: abank
+      POSTGRES_USER: abank
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-Abank#Dev2026}
+    ports:
+      - "5433:5432"
+    volumes:
+      # Los scripts corren en orden alfabético la primera vez que se crea el volumen.
+      - "./Base de datos:/docker-entrypoint-initdb.d:ro"
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      # Por TCP: durante los scripts de inicio Postgres solo escucha por socket local,
+      # así que esto no da verde hasta que la base está lista de verdad.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U abank -d abank"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  api:
+    build:
+      context: ./Backend
+      dockerfile: src/Abank.Api/Dockerfile
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__Abank: "Host=db;Port=5432;Database=abank;Username=abank;Password=${DB_PASSWORD:-Abank#Dev2026}"
+      Jwt__SigningKey: ${JWT_SIGNING_KEY:-llave-de-desarrollo-cambiar-en-produccion-0123456789}
+    ports:
+      - "5080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:

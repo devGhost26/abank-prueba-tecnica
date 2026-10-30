@@ -1,0 +1,548 @@
+{
+  "info": {
+    "name": "Abank · API de usuarios",
+    "description": "Recorre todos los endpoints. Correr completa en orden: el login guarda el token y el alta guarda el id que usan las siguientes.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefono\": \"{{adminTelefono}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Trae token bearer\", () => { pm.expect(body.token_type).to.eql(\"bearer\"); pm.expect(body.access_token).to.be.a(\"string\"); });",
+                  "pm.test(\"No expone el password\", () => pm.expect(body.user).to.not.have.property(\"password\"));",
+                  "pm.collectionVariables.set(\"token\", body.access_token);",
+                  "pm.collectionVariables.set(\"adminId\", body.user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login con contraseña incorrecta",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefono\": \"{{adminTelefono}}\",\n  \"password\": \"Incorrecta1\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));",
+                  "pm.test(\"ProblemDetails con errorCode Auth.InvalidCredentials\", () => pm.expect(pm.response.json().errorCode).to.eql(\"Auth.InvalidCredentials\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login de usuario inactivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"telefono\": \"70000005\",\n  \"password\": \"Usuario2026*\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 403\", () => pm.response.to.have.status(403));",
+                  "pm.test(\"ProblemDetails con errorCode Auth.UserInactive\", () => pm.expect(pm.response.json().errorCode).to.eql(\"Auth.UserInactive\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar sin token",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 401\", () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Usuarios",
+      "item": [
+        {
+          "name": "GetUsers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?pagina=1&tamano=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "pagina",
+                  "value": "1"
+                },
+                {
+                  "key": "tamano",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es un arreglo\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));",
+                  "pm.test(\"Trae el total en X-Total-Count\", () => pm.expect(Number(pm.response.headers.get(\"X-Total-Count\"))).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CreateUser",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Prueba\",\n  \"apellidos\": \"Postman\",\n  \"fechanacimiento\": \"1996-05-10\",\n  \"telefono\": \"{{telefonoNuevo}}\",\n  \"email\": \"postman{{telefonoNuevo}}@abank.test\",\n  \"password\": \"Clave2026\",\n  \"direccion\": \"San Salvador\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"telefonoNuevo\", \"7\" + Math.floor(1000000 + Math.random() * 8999999));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 201\", () => pm.response.to.have.status(201));",
+                  "const user = pm.response.json();",
+                  "pm.test(\"Location apunta al nuevo usuario\", () => pm.expect(pm.response.headers.get(\"Location\")).to.eql(`/api/v1/users/${user.id}`));",
+                  "pm.test(\"Nace activo y con fecha de creación\", () => { pm.expect(user.estado).to.eql(\"A\"); pm.expect(user.fechacreacion).to.be.a(\"string\"); pm.expect(user.fechamodificacion).to.eql(null); });",
+                  "pm.collectionVariables.set(\"userId\", user.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CreateUser con teléfono repetido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"Prueba\",\n  \"apellidos\": \"Postman\",\n  \"fechanacimiento\": \"1996-05-10\",\n  \"telefono\": \"{{telefonoNuevo}}\",\n  \"email\": \"postman{{telefonoNuevo}}@abank.test\",\n  \"password\": \"Clave2026\",\n  \"direccion\": \"San Salvador\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"ProblemDetails con errorCode User.PhoneAlreadyExists\", () => pm.expect(pm.response.json().errorCode).to.eql(\"User.PhoneAlreadyExists\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CreateUser con datos inválidos",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombres\": \"test\",\n  \"apellidos\": \"\",\n  \"fechanacimiento\": \"2020-01-01\",\n  \"telefono\": \"12\",\n  \"email\": \"x\",\n  \"password\": \"123\",\n  \"direccion\": \"\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 400\", () => pm.response.to.have.status(400));",
+                  "pm.test(\"Marca cada campo\", () => pm.expect(Object.keys(pm.response.json().errors)).to.include.members([\"apellidos\",\"fechanacimiento\",\"telefono\",\"email\",\"password\",\"direccion\"]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GetUser",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Es el usuario creado\", () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get(\"userId\")));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "UpdateUser",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": {{userId}},\n  \"nombres\": \"Prueba Editada\",\n  \"apellidos\": \"Postman\",\n  \"fechanacimiento\": \"1996-05-10\",\n  \"telefono\": \"{{telefonoNuevo}}\",\n  \"email\": \"postman{{telefonoNuevo}}@abank.test\",\n  \"direccion\": \"Santa Tecla\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "const user = pm.response.json();",
+                  "pm.test(\"Guardó los cambios\", () => pm.expect(user.nombres).to.eql(\"Prueba Editada\"));",
+                  "pm.test(\"El trigger marcó la modificación\", () => pm.expect(user.fechamodificacion).to.be.a(\"string\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DeleteUser",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Queda inactivo (baja lógica)\", () => pm.expect(pm.response.json().estado).to.eql(\"I\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "DeleteUser sobre sí mismo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{adminId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{adminId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 409\", () => pm.response.to.have.status(409));",
+                  "pm.test(\"ProblemDetails con errorCode User.CannotDeactivateSelf\", () => pm.expect(pm.response.json().errorCode).to.eql(\"User.CannotDeactivateSelf\"));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "GetUser inexistente",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/999999",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "999999"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Responde 404\", () => pm.response.to.have.status(404));",
+                  "pm.test(\"ProblemDetails con errorCode User.NotFound\", () => pm.expect(pm.response.json().errorCode).to.eql(\"User.NotFound\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "adminId",
+      "value": ""
+    },
+    {
+      "key": "userId",
+      "value": ""
+    },
+    {
+      "key": "telefonoNuevo",
+      "value": ""
+    }
+  ]
+}
