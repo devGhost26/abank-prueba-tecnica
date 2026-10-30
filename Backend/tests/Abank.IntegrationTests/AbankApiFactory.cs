@@ -47,6 +47,7 @@ public sealed class AbankApiFactory : WebApplicationFactory<Program>, IAsyncLife
     {
         builder.UseEnvironment("Testing");
         builder.UseSetting("ConnectionStrings:Abank", ConnectionString);
+        builder.UseSetting("Jwt:SigningKey", "llave-solo-para-las-pruebas-de-integracion-0123456789");
         // Las pruebas inician sesión muchas veces seguidas desde la misma «IP».
         builder.UseSetting("RateLimiting:LoginPermitLimit", "1000");
     }

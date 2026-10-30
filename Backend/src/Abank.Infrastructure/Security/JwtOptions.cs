@@ -9,6 +9,10 @@ public sealed class JwtOptions
 
     public string Issuer { get; init; } = string.Empty;
     public string Audience { get; init; } = string.Empty;
+    /// <summary>
+    /// Solo existe en appsettings.Development.json. En cualquier otro ambiente llega por variable de
+    /// entorno (Jwt__SigningKey); si falta, la API no arranca en lugar de firmar con una llave conocida.
+    /// </summary>
     public string SigningKey { get; init; } = string.Empty;
     public int ExpirationMinutes { get; init; } = 60;
 }
