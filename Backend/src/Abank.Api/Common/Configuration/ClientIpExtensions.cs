@@ -25,7 +25,9 @@ public static class ClientIpExtensions
 
         services.Configure<ForwardedHeadersOptions>(options =>
         {
-            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor;
+            // El proxy termina el HTTPS: sin X-Forwarded-Proto la API cree que la petición llegó por
+            // http y lo anuncia así en el documento OpenAPI, y Scalar no puede llamarla desde https.
+            options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
             options.ForwardedForHeaderName = header;
             options.ForwardLimit = 1;
             // Las IPs de los proxies de Render y Cloudflare cambian; la confianza la da la cabecera, no la IP.
