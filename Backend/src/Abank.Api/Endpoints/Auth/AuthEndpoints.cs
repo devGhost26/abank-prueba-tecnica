@@ -25,17 +25,8 @@ public static class AuthEndpoints
     }
 
     private static async Task<IResult> Login(
-        LoginRequest request, HttpContext httpContext, ISender sender, TimeProvider timeProvider,
-        ILoggerFactory loggerFactory, CancellationToken cancellationToken)
+        LoginRequest request, ISender sender, TimeProvider timeProvider, CancellationToken cancellationToken)
     {
-        // TEMPORAL: diagnóstico de la IP detrás de los proxies de Render. Se quita al ajustar el límite.
-        var headers = httpContext.Request.Headers;
-        loggerFactory.CreateLogger("Abank.Api.Auth").LogInformation(
-            "Login desde {ClientIp} | X-Forwarded-For: {ForwardedFor} | X-Original-For: {OriginalFor} | CF-Connecting-IP: {CfConnectingIp} | True-Client-IP: {TrueClientIp}",
-            httpContext.Connection.RemoteIpAddress, headers["X-Forwarded-For"].ToString(),
-            headers["X-Original-For"].ToString(), headers["CF-Connecting-IP"].ToString(),
-            headers["True-Client-IP"].ToString());
-
         var result = await sender.Send(new LoginCommand(request.Telefono, request.Password), cancellationToken);
 
         return result.IsSuccess

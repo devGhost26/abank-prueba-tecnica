@@ -20,8 +20,12 @@ builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
 builder.Services.AddLoginRateLimit(builder.Configuration);
+builder.Services.AddClientIpFromProxy(builder.Configuration);
 
 var app = builder.Build();
+
+// Primero: todo lo que sigue, incluido el límite de logins, debe ver la IP real del cliente.
+app.UseClientIpFromProxy();
 
 app.UseExceptionHandler();
 // Las respuestas sin cuerpo (401 del token, 404 de ruta, 429) también salen como ProblemDetails.

@@ -8,6 +8,26 @@ Base de datos/  scripts de creación de objetos y datos iniciales
 postman/        colección y entorno, con verificaciones
 ```
 
+## Probarlo en línea, sin instalar nada
+
+La API está desplegada en **https://abank-api-1nsm.onrender.com**:
+
+| | URL |
+|---|---|
+| Documentación interactiva (Scalar) | https://abank-api-1nsm.onrender.com/scalar/v1 |
+| Especificación OpenAPI | https://abank-api-1nsm.onrender.com/openapi/v1.json |
+| Salud | https://abank-api-1nsm.onrender.com/health |
+
+Se entra con el mismo usuario de ejemplo: teléfono `70000001`, contraseña `Abank2026*`.
+
+Está en el plan gratuito de Render: tras 15 minutos sin uso la API se suspende, y **la primera petición puede tardar cerca de un minuto** mientras despierta. Las siguientes responden normal.
+
+La colección de Postman corre contra el despliegue cambiando una variable:
+
+```bash
+npx newman run postman/Abank.postman_collection.json -e postman/Abank.postman_environment.json --env-var baseUrl=https://abank-api-1nsm.onrender.com
+```
+
 ---
 
 ## Levantarlo
@@ -41,7 +61,7 @@ Los puertos no son los habituales (5080 para la API y 5433 para Postgres) para n
 
 ### Sin Docker
 
-Con Postgres corriendo en `localhost:5433` y los scripts de `Base de datos/` ya ejecutados en orden:
+Requiere el **SDK de .NET 10**. Con Postgres corriendo en `localhost:5433` y los scripts de `Base de datos/` ya ejecutados en orden:
 
 ```bash
 cd Backend
@@ -49,6 +69,8 @@ dotnet run --project src/Abank.Api
 ```
 
 La API queda en http://localhost:5080. La cadena de conexión está en `Backend/src/Abank.Api/appsettings.json`.
+
+Se usa .NET 10 y no 8 porque el soporte de .NET 8 termina en noviembre de 2026; .NET 10 es la versión LTS vigente y cumple el «.NET 8+» del enunciado.
 
 ---
 
@@ -217,3 +239,23 @@ Recorrido de `POST /api/v1/users`:
 | JWT HS256 de 60 minutos | Firmado con la llave de configuración (mínimo 256 bits, se valida al arrancar). Solo lleva el id y el nombre, ningún dato sensible |
 | `ILogger` de .NET, sin librerías de logging | Cada caso de uso se registra con su duración y, si falló, con el código de error; cada línea lleva el `TraceId` de su petición |
 | Scalar expuesto siempre | Para facilitar la revisión de la prueba. En producción se limitaría a Development |
+
+---
+
+## Despliegue
+
+| Pieza | Servicio |
+|---|---|
+| API | [Render](https://render.com), Web Service con Docker (`Backend/src/Abank.Api/Dockerfile`), región Virginia |
+| Base de datos | [Neon](https://neon.tech), PostgreSQL 17 administrado, misma región. Creada con los mismos scripts de `Base de datos/` |
+
+Render construye y publica la imagen en cada push a `main`. La configuración va en variables de entorno, nunca en el repositorio:
+
+| Variable | Para qué |
+|---|---|
+| `ConnectionStrings__Abank` | Cadena de conexión a Neon, con SSL obligatorio |
+| `Jwt__SigningKey` | Llave del JWT, generada por Render. Sin ella la API no arranca: la llave de desarrollo solo existe en `appsettings.Development.json` |
+| `Proxy__ClientIpHeader` | `CF-Connecting-IP`. Ver abajo |
+| `PORT` | `8080`, el puerto en que escucha la imagen |
+
+**La IP del cliente detrás de los proxies.** En Render las peticiones pasan por Cloudflare y por un balanceador interno antes de llegar a la API, y ambos cambian de IP entre peticiones. Sin ajuste, el límite de 10 logins por minuto quedaría atado a esas IPs y nunca se activaría. La API toma la IP del cliente de `CF-Connecting-IP`, que escribe Cloudflare: se comprobó que Cloudflare rechaza las peticiones que ya traen esa cabecera, así que un cliente no puede inventarse una IP para saltarse el límite. `X-Forwarded-For` no sirve para esto, porque el cliente puede agregarle valores. En local y en Docker no hay proxy y se usa la IP de la conexión.
