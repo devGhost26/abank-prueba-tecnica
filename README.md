@@ -70,6 +70,14 @@ La API queda en http://localhost:5080. La cadena de conexión está en `Backend/
 
   Son 40 unitarias y 21 de integración. Las de integración levantan un PostgreSQL real con Testcontainers y le ejecutan **los mismos scripts** de `Base de datos/`, así que también prueban la secuencia, el CHECK y los triggers.
 
+### Cómo está armada la colección de Postman
+
+- **El token lo pone la colección.** El *Login* guarda el `access_token` en la variable `{{token}}`, y la colección lo manda como `Bearer {{token}}` en todas las peticiones. Para probar una petición suelta, corre primero el *Login*.
+- **Algunas van sin token a propósito.** Los tres logins y *Listar sin token* están en *No Auth*; la última existe para comprobar que la API responde 401.
+- **El alta usa un teléfono al azar.** *CreateUser* manda `"telefono": "{{telefonoNuevo}}"`, y su script *Pre-request* genera un número nuevo antes de cada envío, para que la colección se pueda correr varias veces sin chocar con «teléfono repetido». Por eso cambiar esa variable no tiene efecto: el script la reemplaza.
+- **Para probar tus propios datos**, escríbelos directo en el *Body*, en lugar de la variable. Para ver las validaciones está *CreateUser con datos inválidos*, que espera un 400 con el error de cada campo.
+- **Para ver qué se envió de verdad**, abre la consola de Postman (*View → Show Postman Console*, `Ctrl+Alt+C`). Muestra el cuerpo y las cabeceras reales de cada petición, con las variables ya reemplazadas.
+
 ---
 
 ## Endpoints
